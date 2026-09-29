@@ -1,0 +1,24 @@
+{
+  "expo": {
+    "name": "FieldSync Engine",
+    "slug": "fieldsync-engine",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "scheme": "fieldsync",
+    "userInterfaceStyle": "dark",
+    "newArchEnabled": true,
+    "plugins": [
+      "expo-router",
+      "expo-sqlite",
+      "expo-secure-store"
+    ],
+    "android": {
+      "package": "com.fieldsync.engine",
+      "usesCleartextTraffic": false
+    },
+    "ios": {
+      "bundleIdentifier": "com.fieldsync.engine",
+      "supportsTablet": false
+    }
+  }
+}
