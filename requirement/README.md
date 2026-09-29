@@ -52,7 +52,7 @@ flowchart TB
     SyncWorker -->|5. Poll Pending Tasks| OutboxQueue
     SyncWorker -->|6. HTTPS Request + Idempotency-Key| Gateway
     Gateway --> API --> ServerDB
-    API -->>|7. ACK / 409 Conflict| SyncWorker
+    API -->|7. ACK / 409 Conflict| SyncWorker
     SyncWorker -->|8. Mark SYNCED / CONFLICT| SQLite
 ```
 
