@@ -51,7 +51,7 @@ flowchart TB
     SyncProcessor -->|HTTPS with Idempotency-Key| Gateway
     Gateway --> RemoteAPI
     RemoteAPI --> CentralDB
-    RemoteAPI -->>|Ack / 409 Conflict| SyncProcessor
+    RemoteAPI -->|Ack / 409 Conflict| SyncProcessor
     SyncProcessor -->|Update Status / Resolve| DB
     DB -.->|Notify Change| TQ
 ```
