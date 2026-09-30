@@ -17,3 +17,4 @@ coverage/
 *.bak
 android/
 ios/
+requirement/
