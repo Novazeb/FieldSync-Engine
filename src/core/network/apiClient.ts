@@ -1,12 +1,66 @@
-import axios, { type AxiosError, type InternalAxiosRequestConfig } from 'axios';
+import axios, { type AxiosError, type InternalAxiosRequestConfig, type AxiosResponse } from 'axios';
 import * as SecureStore from 'expo-secure-store';
 
-const API_BASE_URL = 'https://api.fieldsync.example.com';
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'https://api.fieldsync.example.com';
+const isMockMode = !process.env.EXPO_PUBLIC_API_URL || API_BASE_URL.includes('example.com');
+
+const mockAdapter = async (config: InternalAxiosRequestConfig): Promise<AxiosResponse> => {
+  await new Promise((resolve) => setTimeout(resolve, 300));
+
+  let dataObj: Record<string, unknown> = {};
+  if (typeof config.data === 'string') {
+    try {
+      dataObj = JSON.parse(config.data);
+    } catch {
+      dataObj = {};
+    }
+  } else if (config.data && typeof config.data === 'object') {
+    dataObj = config.data as Record<string, unknown>;
+  }
+
+  if (typeof dataObj.sku === 'string' && dataObj.sku.toUpperCase().includes('CONFLICT')) {
+    const conflictError = new axios.AxiosError(
+      'Conflict: Version mismatch',
+      'ERR_BAD_REQUEST',
+      config,
+      null,
+      {
+        status: 409,
+        statusText: 'Conflict',
+        headers: {},
+        config,
+        data: {
+          success: false,
+          error: 'CONFLICT_DETECTED',
+          serverVersion: 2,
+          serverData: { quantity: (Number(dataObj.quantity) || 0) + 10, version: 2 },
+        },
+      } as AxiosResponse
+    );
+    return Promise.reject(conflictError);
+  }
+
+  return {
+    data: {
+      success: true,
+      data: {
+        status: 'SYNCED',
+        clientTxId: dataObj.clientTxId,
+        serverTimestamp: Date.now(),
+      },
+    },
+    status: 201,
+    statusText: 'Created',
+    headers: { 'x-cache-lookup': 'HIT-IDEMPOTENT' },
+    config,
+  };
+};
 
 export const apiClient = axios.create({
   baseURL: API_BASE_URL,
   timeout: 15000,
   headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+  adapter: isMockMode ? mockAdapter : undefined,
 });
 
 let isRefreshing = false;
