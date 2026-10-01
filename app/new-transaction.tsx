@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import {
-  View, Text, TextInput, Pressable, StyleSheet, SafeAreaView, Alert, KeyboardAvoidingView, Platform, ScrollView,
+  View, Text, TextInput, Pressable, StyleSheet, SafeAreaView, Alert, KeyboardAvoidingView, Platform, ScrollView, Modal,
 } from 'react-native';
 import { useRouter, Stack } from 'expo-router';
+import { CameraView, useCameraPermissions, type BarcodeScanningResult } from 'expo-camera';
+import * as Haptics from 'expo-haptics';
 import { colors, spacing, typography, radii } from '../src/shared/theme/tokens';
 import { useCreateTransaction, useStockSummary } from '../src/features/inventory/hooks/useInventory';
 import { type TransactionType } from '../src/core/sync/types';
@@ -11,6 +13,7 @@ export default function NewTransactionScreen() {
   const router = useRouter();
   const createTx = useCreateTransaction();
   const { data: stockList } = useStockSummary();
+  const [permission, requestPermission] = useCameraPermissions();
 
   const [sku, setSku] = useState('');
   const [itemName, setItemName] = useState('');
@@ -18,6 +21,7 @@ export default function NewTransactionScreen() {
   const [quantity, setQuantity] = useState('');
   const [notes, setNotes] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [isScanning, setIsScanning] = useState(false);
 
   const matchedStock = stockList?.find(
     (item) => item.sku.toUpperCase() === sku.trim().toUpperCase()
@@ -32,6 +36,24 @@ export default function NewTransactionScreen() {
     if (existing && !itemName) {
       setItemName(existing.itemName);
     }
+  };
+
+  const handleOpenScanner = async () => {
+    if (!permission?.granted) {
+      const res = await requestPermission();
+      if (!res.granted) {
+        Alert.alert('Izin Kamera', 'Izin kamera dibutuhkan untuk memindai barcode fisik barang.');
+        return;
+      }
+    }
+    setIsScanning(true);
+  };
+
+  const handleBarcodeScanned = (result: BarcodeScanningResult) => {
+    if (!result.data) return;
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    handleSkuChange(result.data.trim());
+    setIsScanning(false);
   };
 
   const validate = (): boolean => {
@@ -69,7 +91,18 @@ export default function NewTransactionScreen() {
       <Stack.Screen options={{ title: 'Catat Transaksi Baru' }} />
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
         <ScrollView contentContainerStyle={styles.form}>
-          <Text style={styles.label}>KODE SKU / BARCODE</Text>
+          <View style={styles.labelRow}>
+            <Text style={styles.label}>KODE SKU / BARCODE</Text>
+            <Pressable
+              style={styles.scanBtn}
+              onPress={handleOpenScanner}
+              accessibilityRole="button"
+              accessibilityLabel="Pindai barcode dengan kamera"
+            >
+              <Text style={styles.scanBtnText}>📷 SCAN BARCODE</Text>
+            </Pressable>
+          </View>
+
           <TextInput
             style={[styles.input, errors.sku && styles.inputError]}
             placeholder="Contoh: SKU-88401"
@@ -159,6 +192,39 @@ export default function NewTransactionScreen() {
           </Pressable>
         </ScrollView>
       </KeyboardAvoidingView>
+
+      <Modal
+        visible={isScanning}
+        animationType="slide"
+        onRequestClose={() => setIsScanning(false)}
+      >
+        <SafeAreaView style={styles.modalContainer}>
+          <View style={styles.modalHeader}>
+            <Text style={styles.modalTitle}>ARAHKAN KE BARCODE / QR</Text>
+            <Pressable
+              style={styles.modalCloseBtn}
+              onPress={() => setIsScanning(false)}
+            >
+              <Text style={styles.modalCloseText}>✕ TUTUP</Text>
+            </Pressable>
+          </View>
+
+          <CameraView
+            style={styles.camera}
+            barcodeScannerSettings={{
+              barcodeTypes: ['qr', 'ean13', 'code128', 'code39', 'upc_a'],
+            }}
+            onBarcodeScanned={handleBarcodeScanned}
+          >
+            <View style={styles.scannerOverlay}>
+              <View style={styles.scannerTargetBox} />
+              <Text style={styles.scannerHint}>
+                Posisikan kode barcode tepat di dalam kotak
+              </Text>
+            </View>
+          </CameraView>
+        </SafeAreaView>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -166,14 +232,31 @@ export default function NewTransactionScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bgPrimary },
   form: { padding: spacing.md, paddingBottom: spacing.xl * 2 },
+  labelRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: spacing.md,
+    marginBottom: spacing.xs,
+  },
   label: {
     color: colors.textSecondary,
     fontSize: 12,
     fontWeight: '600',
     letterSpacing: 0.5,
     textTransform: 'uppercase',
-    marginBottom: spacing.xs,
-    marginTop: spacing.md,
+  },
+  scanBtn: {
+    backgroundColor: colors.bgSubtle,
+    paddingHorizontal: spacing.sm + 2,
+    paddingVertical: 4,
+    borderRadius: 2,
+  },
+  scanBtnText: {
+    color: colors.syncOnline,
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 0.5,
   },
   input: {
     backgroundColor: colors.bgSurface,
@@ -233,4 +316,52 @@ const styles = StyleSheet.create({
   },
   submitDisabled: { opacity: 0.5 },
   submitText: { color: colors.bgPrimary, fontSize: typography.body2.fontSize, fontWeight: '700', letterSpacing: 0.5 },
+
+  modalContainer: { flex: 1, backgroundColor: colors.bgPrimary },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.md,
+    backgroundColor: colors.bgPrimary,
+  },
+  modalTitle: {
+    color: colors.textPrimary,
+    fontSize: typography.body2.fontSize,
+    fontWeight: '700',
+    letterSpacing: 0.5,
+  },
+  modalCloseBtn: {
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 4,
+    backgroundColor: colors.bgSubtle,
+    borderRadius: 2,
+  },
+  modalCloseText: {
+    color: colors.textSecondary,
+    fontSize: typography.caption.fontSize,
+    fontWeight: '700',
+  },
+  camera: { flex: 1 },
+  scannerOverlay: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.4)',
+  },
+  scannerTargetBox: {
+    width: 260,
+    height: 180,
+    borderWidth: 2,
+    borderColor: colors.syncOnline,
+    borderRadius: 8,
+    backgroundColor: 'transparent',
+  },
+  scannerHint: {
+    color: colors.textPrimary,
+    fontSize: typography.caption.fontSize,
+    marginTop: spacing.md,
+    fontWeight: '600',
+  },
 });
