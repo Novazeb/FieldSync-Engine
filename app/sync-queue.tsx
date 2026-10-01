@@ -25,7 +25,7 @@ export default function SyncQueueScreen() {
   });
 
   const handleForceSync = async () => {
-    await processSyncQueue(db);
+    await processSyncQueue(db, { force: true });
     await refetch();
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
   };
@@ -147,11 +147,10 @@ const styles = StyleSheet.create({
     right: spacing.md,
   },
   syncButton: {
-    backgroundColor: colors.bgSurface,
-    borderWidth: 1,
-    borderColor: colors.borderStrong,
+    backgroundColor: colors.bgSubtle,
+    borderWidth: 0,
     height: 48,
-    borderRadius: radii.md,
+    borderRadius: 0,
     justifyContent: 'center',
     alignItems: 'center',
   },
