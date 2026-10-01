@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
-import { colors, spacing, typography, radii } from '../theme/tokens';
+import { colors, spacing, typography } from '../theme/tokens';
 import { useSyncStatus } from '../../features/sync/hooks/useSyncStatus';
 
 interface SyncStatusPillProps {
@@ -30,9 +30,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: colors.bgSurface,
-    borderWidth: 1,
-    borderColor: colors.borderSubtle,
-    borderRadius: radii.pill,
+    borderWidth: 0,
+    borderRadius: 0,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.xs + 2,
     height: 36,
@@ -40,7 +39,7 @@ const styles = StyleSheet.create({
   dot: {
     width: 6,
     height: 6,
-    borderRadius: 3,
+    borderRadius: 0,
     marginRight: spacing.sm,
   },
   label: {
