@@ -39,13 +39,19 @@ export default function SyncQueueScreen() {
       <Stack.Screen options={{ title: 'Sync Health & Queue' }} />
 
       <View style={styles.statusSection}>
-        <Text style={styles.sectionLabel}>STATUS SISTEM</Text>
-        <Text style={styles.statusText}>
-          Koneksi: {network.isConnected ? 'Online' : 'Offline'} ({network.type})
-        </Text>
+        <Text style={styles.statusSectionLabel}>STATUS SISTEM</Text>
+        <View style={styles.statusRow}>
+          <Text style={styles.statusLabel}>Koneksi:</Text>
+          <Text style={styles.statusValue}>
+            {network.isConnected ? 'Online' : 'Offline'} ({network.type})
+          </Text>
+        </View>
       </View>
 
-      <Text style={styles.sectionLabel}>ANTREAN OUTBOX ({tasks?.length ?? 0} Item)</Text>
+      <View style={styles.listHeaderRow}>
+        <Text style={styles.queueHeaderLabel}>ANTREAN OUTBOX</Text>
+        <Text style={styles.queueHeaderCount}>{tasks?.length ?? 0} ITEM</Text>
+      </View>
 
       <FlatList
         data={tasks}
@@ -53,22 +59,39 @@ export default function SyncQueueScreen() {
         contentContainerStyle={[styles.listContent, { paddingBottom: bottomPadding + 64 }]}
         renderItem={({ item, index }) => (
           <View style={styles.taskCard}>
-            <Text style={styles.taskIndex}>{index + 1}.</Text>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.taskEndpoint}>
-                {item.http_method} {item.endpoint}
-              </Text>
-              <Text style={styles.taskMeta}>
-                Idempotency: {item.idempotency_key.substring(0, 8)}...
-              </Text>
-              <Text style={styles.taskMeta}>Status: {item.status}</Text>
+            <View style={styles.taskCardHeader}>
+              <View style={styles.endpointBadge}>
+                <Text style={styles.taskEndpoint}>
+                  {item.http_method} {item.endpoint}
+                </Text>
+              </View>
+              <Text style={styles.taskIndex}>#{index + 1}</Text>
+            </View>
+
+            <View style={styles.taskDetails}>
+              <View style={styles.metaRow}>
+                <Text style={styles.metaLabel}>IDEMPOTENCY</Text>
+                <Text style={styles.metaValue}>
+                  {item.idempotency_key.substring(0, 12)}...
+                </Text>
+              </View>
+              <View style={styles.metaRow}>
+                <Text style={styles.metaLabel}>STATUS</Text>
+                <Text style={styles.metaValue}>{item.status}</Text>
+              </View>
               {item.retry_count > 0 && (
-                <Text style={styles.taskMeta}>Retry: {item.retry_count}/{item.max_retries}</Text>
+                <View style={styles.metaRow}>
+                  <Text style={styles.metaLabel}>RETRY</Text>
+                  <Text style={styles.metaValue}>{item.retry_count} / {item.max_retries}</Text>
+                </View>
               )}
               {item.last_error && (
-                <Text style={[styles.taskMeta, { color: colors.syncConflict }]} numberOfLines={1}>
-                  Error: {item.last_error}
-                </Text>
+                <View style={styles.metaRow}>
+                  <Text style={[styles.metaLabel, { color: colors.syncConflict }]}>ERROR</Text>
+                  <Text style={[styles.metaValue, { color: colors.syncConflict }]} numberOfLines={1}>
+                    {item.last_error}
+                  </Text>
+                </View>
               )}
             </View>
           </View>
@@ -99,26 +122,57 @@ export default function SyncQueueScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bgPrimary },
   statusSection: {
-    padding: spacing.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.md,
+    backgroundColor: colors.bgSurface,
     borderBottomWidth: 1,
     borderBottomColor: colors.borderSubtle,
+    marginBottom: spacing.md,
   },
-  sectionLabel: {
+  statusSectionLabel: {
     color: colors.textTertiary,
-    fontSize: typography.caption.fontSize,
-    fontWeight: typography.caption.fontWeight,
+    fontSize: 10,
+    fontWeight: '700',
     letterSpacing: 0.5,
-    paddingHorizontal: spacing.md,
-    marginVertical: spacing.sm,
+    marginBottom: spacing.xs,
   },
-  statusText: {
+  statusRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  statusLabel: {
     color: colors.textSecondary,
     fontSize: typography.body2.fontSize,
-    marginTop: spacing.xs,
   },
-  listContent: { paddingHorizontal: spacing.md, paddingBottom: 80 },
-  taskCard: {
+  statusValue: {
+    color: colors.textPrimary,
+    fontSize: typography.body2.fontSize,
+    fontWeight: '600',
+  },
+  listHeaderRow: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: spacing.md,
+    marginBottom: spacing.sm,
+  },
+  queueHeaderLabel: {
+    color: colors.textTertiary,
+    fontSize: 10,
+    fontWeight: '700',
+    letterSpacing: 0.5,
+  },
+  queueHeaderCount: {
+    color: colors.textTertiary,
+    fontSize: 10,
+    fontWeight: '700',
+    letterSpacing: 0.5,
+  },
+  listContent: {
+    paddingHorizontal: spacing.md,
+  },
+  taskCard: {
     backgroundColor: colors.bgSurface,
     borderWidth: 1,
     borderColor: colors.borderSubtle,
@@ -126,40 +180,62 @@ const styles = StyleSheet.create({
     padding: spacing.md,
     marginBottom: spacing.sm,
   },
-  taskIndex: {
-    color: colors.textTertiary,
-    fontSize: typography.body2.fontSize,
-    fontWeight: '700',
-    marginRight: spacing.sm,
-    width: 24,
+  taskCardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: spacing.sm,
+  },
+  endpointBadge: {
+    backgroundColor: colors.bgSubtle,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 3,
+    borderRadius: radii.sm,
   },
   taskEndpoint: {
     color: colors.textPrimary,
-    fontSize: typography.body2.fontSize,
+    fontSize: typography.caption.fontSize,
     fontWeight: '600',
-    marginBottom: spacing.xs,
+    letterSpacing: 0.3,
   },
-  taskMeta: {
+  taskIndex: {
     color: colors.textTertiary,
     fontSize: typography.caption.fontSize,
-    marginTop: 2,
+    fontWeight: '700',
+  },
+  taskDetails: {
+    gap: 4,
+  },
+  metaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  metaLabel: {
+    color: colors.textTertiary,
+    fontSize: 11,
+    fontWeight: '600',
+    letterSpacing: 0.3,
+  },
+  metaValue: {
+    color: colors.textSecondary,
+    fontSize: 11,
+    fontWeight: '500',
   },
   footer: {
     position: 'absolute',
-    bottom: spacing.lg,
     left: spacing.md,
     right: spacing.md,
   },
   syncButton: {
-    backgroundColor: colors.bgSubtle,
-    borderWidth: 0,
+    backgroundColor: colors.textPrimary,
     height: 48,
-    borderRadius: 0,
+    borderRadius: radii.md,
     justifyContent: 'center',
     alignItems: 'center',
   },
   syncButtonText: {
-    color: colors.textPrimary,
+    color: colors.bgPrimary,
     fontSize: typography.body2.fontSize,
     fontWeight: '700',
     letterSpacing: 0.5,
