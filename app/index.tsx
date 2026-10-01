@@ -73,7 +73,17 @@ export default function HomeScreen() {
         options={{
           headerTitle: () => <Text style={styles.headerTitle}>FIELDSYNC</Text>,
           headerRight: () => (
-            <SyncStatusPill onPress={() => router.push('/sync-queue')} />
+            <View style={styles.headerRightRow}>
+              <Pressable
+                style={styles.headerPdfBtn}
+                onPress={() => router.push('/export-report')}
+                accessibilityRole="button"
+                accessibilityLabel="Unduh laporan PDF"
+              >
+                <Text style={styles.headerPdfBtnText}>PDF</Text>
+              </Pressable>
+              <SyncStatusPill onPress={() => router.push('/sync-queue')} />
+            </View>
           ),
         }}
       />
@@ -252,6 +262,25 @@ const styles = StyleSheet.create({
     fontSize: typography.heading2.fontSize,
     fontWeight: '700',
     letterSpacing: 1,
+  },
+  headerRightRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs + 2,
+  },
+  headerPdfBtn: {
+    backgroundColor: colors.bgSubtle,
+    borderWidth: 1,
+    borderColor: colors.borderSubtle,
+    borderRadius: radii.sm,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  headerPdfBtnText: {
+    color: colors.textSecondary,
+    fontSize: 10,
+    fontWeight: '700',
+    letterSpacing: 0.5,
   },
   summaryRow: {
     flexDirection: 'row',
