@@ -25,15 +25,16 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.xl * 2,
   },
   icon: {
-    fontSize: 32,
-    marginBottom: spacing.md,
+    fontSize: 24,
+    color: colors.textTertiary,
+    marginBottom: spacing.sm,
   },
   title: {
     color: colors.textPrimary,
-    fontSize: typography.heading2.fontSize,
-    fontWeight: typography.heading2.fontWeight,
+    fontSize: typography.body1.fontSize,
+    fontWeight: '600',
     textAlign: 'center',
-    marginBottom: spacing.sm,
+    marginBottom: spacing.xs,
   },
   subtitle: {
     color: colors.textSecondary,
