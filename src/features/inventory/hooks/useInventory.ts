@@ -3,6 +3,7 @@ import { useDatabase } from '../../../core/database/provider';
 import {
   insertTransactionAtomic,
   getAllTransactions,
+  getTransactionsByDateRange,
   resolveConflictKeepLocal,
   resolveConflictAcceptServer,
   getSkuStockSummary,
@@ -20,6 +21,17 @@ export const useTransactions = () => {
     queryKey: QUERY_KEY,
     queryFn: () => getAllTransactions(db),
     refetchInterval: 3000,
+  });
+};
+
+export const useTransactionsByDate = (date: Date) => {
+  const db = useDatabase();
+  const startOfDay = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 0, 0, 0, 0).getTime();
+  const endOfDay = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59, 999).getTime();
+
+  return useQuery({
+    queryKey: ['inventory', 'transactions', 'by-date', startOfDay, endOfDay],
+    queryFn: () => getTransactionsByDateRange(db, startOfDay, endOfDay),
   });
 };
 
