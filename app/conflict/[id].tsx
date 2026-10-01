@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, SafeAreaView, Pressable, ScrollView, ActivityIndicator } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 import { useDatabase } from '../../src/core/database/provider';
@@ -11,6 +12,7 @@ import * as Haptics from 'expo-haptics';
 export default function ConflictResolutionScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const db = useDatabase();
   const { keepLocal, acceptServer } = useResolveConflict();
 
@@ -57,12 +59,14 @@ export default function ConflictResolutionScreen() {
     router.back();
   };
 
+  const bottomPadding = Math.max(insets.bottom, 16);
+
   return (
     <SafeAreaView style={styles.container}>
       <Stack.Screen options={{ title: 'Resolusi Konflik Data' }} />
-      <ScrollView contentContainerStyle={styles.content}>
+      <ScrollView contentContainerStyle={[styles.content, { paddingBottom: bottomPadding + 32 }]}>
         <View style={styles.banner}>
-          <Text style={styles.bannerTitle}>⚠️ PERBEDAAN VERSI DATA (409 CONFLICT)</Text>
+          <Text style={styles.bannerTitle}>PERBEDAAN VERSI DATA (409 CONFLICT)</Text>
           <Text style={styles.bannerDesc}>
             Data ini telah diperbarui di server pusat oleh pengguna lain saat perangkat Anda offline.
             Pilih versi yang ingin Anda pertahankan di sistem.
@@ -76,7 +80,7 @@ export default function ConflictResolutionScreen() {
             <Text style={styles.cardBadgeLocal}>VERSI LOKAL (PERANGKAT)</Text>
             <Text style={styles.versionTag}>v{tx.version}</Text>
           </View>
-          <Text style={styles.skuText}>{tx.sku} — {tx.item_name}</Text>
+          <Text style={styles.skuText}>{tx.sku}: {tx.item_name}</Text>
           <Text style={styles.detailText}>Tipe Mutasi: {tx.type}</Text>
           <Text style={styles.qtyText}>Kuantitas: {tx.quantity} Unit</Text>
           {tx.notes && <Text style={styles.notesText}>Catatan: {tx.notes}</Text>}
@@ -87,7 +91,7 @@ export default function ConflictResolutionScreen() {
             <Text style={styles.cardBadgeServer}>VERSI SERVER PUSAT</Text>
             <Text style={styles.versionTag}>v{tx.version + 1}</Text>
           </View>
-          <Text style={styles.skuText}>{tx.sku} — {tx.item_name}</Text>
+          <Text style={styles.skuText}>{tx.sku}: {tx.item_name}</Text>
           <Text style={styles.detailText}>Tipe Mutasi: {tx.type}</Text>
           <Text style={styles.qtyText}>Status Server: Diverifikasi Master DB</Text>
         </View>
@@ -99,7 +103,7 @@ export default function ConflictResolutionScreen() {
             disabled={keepLocal.isPending || acceptServer.isPending}
           >
             <Text style={styles.btnKeepText}>
-              📱 PERTAHANKAN DATA LOKAL (TIMPA SERVER)
+              PERTAHANKAN DATA LOKAL (TIMPA SERVER)
             </Text>
           </Pressable>
 
@@ -109,7 +113,7 @@ export default function ConflictResolutionScreen() {
             disabled={keepLocal.isPending || acceptServer.isPending}
           >
             <Text style={styles.btnAcceptText}>
-              ☁️ TERIMA DATA SERVER (PERBARUI LOKAL)
+              TERIMA DATA SERVER (PERBARUI LOKAL)
             </Text>
           </Pressable>
         </View>
