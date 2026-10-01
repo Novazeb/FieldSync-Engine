@@ -101,3 +101,41 @@ export const resolveConflictAcceptServer = async (
     );
   });
 };
+
+export interface SkuStockSummary {
+  sku: string;
+  itemName: string;
+  currentStock: number;
+  totalInbound: number;
+  totalOutbound: number;
+}
+
+export const getSkuStockSummary = async (
+  db: SQLiteDatabase
+): Promise<SkuStockSummary[]> => {
+  return db.getAllAsync<SkuStockSummary>(
+    `SELECT 
+       sku,
+       item_name as itemName,
+       SUM(CASE WHEN type = 'INBOUND' THEN quantity ELSE -quantity END) as currentStock,
+       SUM(CASE WHEN type = 'INBOUND' THEN quantity ELSE 0 END) as totalInbound,
+       SUM(CASE WHEN type = 'OUTBOUND' THEN quantity ELSE 0 END) as totalOutbound
+     FROM inventory_transactions
+     GROUP BY sku
+     ORDER BY sku ASC;`
+  );
+};
+
+export const getStockBySku = async (
+  db: SQLiteDatabase,
+  sku: string
+): Promise<number> => {
+  const row = await db.getFirstAsync<{ currentStock: number | null }>(
+    `SELECT 
+       SUM(CASE WHEN type = 'INBOUND' THEN quantity ELSE -quantity END) as currentStock
+     FROM inventory_transactions
+     WHERE sku = ?;`,
+    [sku]
+  );
+  return row?.currentStock ?? 0;
+};
