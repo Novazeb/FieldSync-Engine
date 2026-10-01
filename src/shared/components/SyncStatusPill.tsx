@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
-import { colors, spacing, typography } from '../theme/tokens';
+import { colors, typography, radii } from '../theme/tokens';
 import { useSyncStatus } from '../../features/sync/hooks/useSyncStatus';
 
 interface SyncStatusPillProps {
@@ -18,7 +18,15 @@ export const SyncStatusPill = ({ onPress }: SyncStatusPillProps) => {
       : colors.syncPending;
 
   return (
-    <Pressable onPress={onPress} style={styles.pill}>
+    <Pressable
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.pill,
+        pressed && styles.pillPressed,
+      ]}
+      accessibilityRole="button"
+      accessibilityLabel={`Status sinkronisasi: ${data.label}`}
+    >
       <View style={[styles.dot, { backgroundColor: dotColor }]} />
       <Text style={styles.label}>{data.label}</Text>
     </Pressable>
@@ -29,24 +37,26 @@ const styles = StyleSheet.create({
   pill: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.bgSurface,
-    borderWidth: 0,
-    borderRadius: 0,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs + 2,
-    height: 36,
+    backgroundColor: colors.bgSubtle,
+    borderRadius: radii.sm,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderWidth: 1,
+    borderColor: colors.borderSubtle,
+  },
+  pillPressed: {
+    opacity: 0.75,
   },
   dot: {
     width: 6,
     height: 6,
-    borderRadius: 0,
-    marginRight: spacing.sm,
+    borderRadius: 3,
+    marginRight: 6,
   },
   label: {
     color: colors.textSecondary,
     fontSize: typography.caption.fontSize,
-    fontWeight: typography.caption.fontWeight,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    fontWeight: '600',
+    letterSpacing: 0.6,
   },
 });
