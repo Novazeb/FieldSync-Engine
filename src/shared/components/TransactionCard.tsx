@@ -9,10 +9,10 @@ interface TransactionCardProps {
 }
 
 const statusConfig = {
-  SYNCED: { label: '✓ TERSINKRON', color: colors.syncOnline },
-  PENDING: { label: '⏱ TERTUNDA', color: colors.syncPending },
-  FAILED: { label: '! GAGAL', color: colors.syncConflict },
-  CONFLICT: { label: '▲ KONFLIK', color: colors.syncConflict },
+  SYNCED: { label: 'SYNCED', color: colors.syncOnline },
+  PENDING: { label: 'PENDING', color: colors.syncPending },
+  FAILED: { label: 'FAILED', color: colors.syncConflict },
+  CONFLICT: { label: 'CONFLICT', color: colors.syncConflict },
 } as const;
 
 const formatTime = (timestamp: number): string => {
@@ -119,11 +119,13 @@ const styles = StyleSheet.create({
   statusBadge: {
     borderWidth: 1,
     borderRadius: radii.sm,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 2,
+    paddingHorizontal: 6,
+    paddingVertical: 1,
+    backgroundColor: colors.bgSubtle,
   },
   statusText: {
-    fontSize: typography.caption.fontSize,
-    fontWeight: typography.caption.fontWeight,
+    fontSize: 10,
+    fontWeight: '600',
+    letterSpacing: 0.5,
   },
 });
