@@ -9,7 +9,6 @@ import { TransactionCard } from '../src/shared/components/TransactionCard';
 import { EmptyState } from '../src/shared/components/EmptyState';
 import { useTransactions } from '../src/features/inventory/hooks/useInventory';
 import { useSyncStatus } from '../src/features/sync/hooks/useSyncStatus';
-import { useDatabaseReady } from '../src/core/database/provider';
 import { startNetworkMonitor } from '../src/core/network/networkMonitor';
 
 export default function HomeScreen() {
