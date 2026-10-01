@@ -7,9 +7,18 @@ import { type AxiosError } from 'axios';
 
 const BATCH_SIZE = 10;
 
-const fetchPendingTasks = async (db: SQLiteDatabase): Promise<SyncTask[]> => {
+const fetchPendingTasks = async (db: SQLiteDatabase, force = false): Promise<SyncTask[]> => {
   const now = Date.now();
-  const rows = await db.getAllAsync<SyncTask>(
+  if (force) {
+    return db.getAllAsync<SyncTask>(
+      `SELECT * FROM sync_queue
+       WHERE status IN ('PENDING', 'FAILED')
+       ORDER BY created_at ASC
+       LIMIT ?;`,
+      [BATCH_SIZE]
+    );
+  }
+  return db.getAllAsync<SyncTask>(
     `SELECT * FROM sync_queue
      WHERE status IN ('PENDING', 'FAILED')
      AND next_retry_at <= ?
@@ -17,7 +26,6 @@ const fetchPendingTasks = async (db: SQLiteDatabase): Promise<SyncTask[]> => {
      LIMIT ?;`,
     [now, BATCH_SIZE]
   );
-  return rows;
 };
 
 const markTaskProcessing = async (db: SQLiteDatabase, taskId: string): Promise<void> => {
@@ -128,11 +136,14 @@ const processTask = async (db: SQLiteDatabase, task: SyncTask): Promise<void> =>
   }
 };
 
-export const processSyncQueue = async (db: SQLiteDatabase): Promise<number> => {
+export const processSyncQueue = async (
+  db: SQLiteDatabase,
+  options?: { force?: boolean }
+): Promise<number> => {
   const isOnline = await checkConnectivity();
-  if (!isOnline) return 0;
+  if (!isOnline && !options?.force) return 0;
 
-  const tasks = await fetchPendingTasks(db);
+  const tasks = await fetchPendingTasks(db, options?.force);
   let processed = 0;
 
   for (const task of tasks) {
