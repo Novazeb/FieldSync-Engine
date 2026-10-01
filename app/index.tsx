@@ -1,6 +1,6 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import {
-  View, Text, FlatList, Pressable, StyleSheet, SafeAreaView, RefreshControl,
+  View, Text, FlatList, Pressable, StyleSheet, SafeAreaView, RefreshControl, TextInput,
 } from 'react-native';
 import { useRouter, Stack } from 'expo-router';
 import { colors, spacing, typography, radii } from '../src/shared/theme/tokens';
@@ -11,12 +11,17 @@ import { useTransactions, useStockSummary } from '../src/features/inventory/hook
 import { useSyncStatus } from '../src/features/sync/hooks/useSyncStatus';
 import { startNetworkMonitor } from '../src/core/network/networkMonitor';
 
+type FilterType = 'ALL' | 'INBOUND' | 'OUTBOUND';
+
 export default function HomeScreen() {
   const router = useRouter();
   const { data: transactions, isLoading, refetch: refetchTx } = useTransactions();
   const { data: stockList, refetch: refetchStock } = useStockSummary();
   const { data: syncStatus } = useSyncStatus();
+
   const [activeTab, setActiveTab] = useState<'MUTASI' | 'STOK'>('MUTASI');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filterType, setFilterType] = useState<FilterType>('ALL');
   const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
@@ -28,6 +33,31 @@ export default function HomeScreen() {
     await Promise.all([refetchTx(), refetchStock()]);
     setRefreshing(false);
   }, [refetchTx, refetchStock]);
+
+  const filteredTransactions = useMemo(() => {
+    if (!transactions) return [];
+    const query = searchQuery.trim().toLowerCase();
+    return transactions.filter((tx) => {
+      const matchQuery =
+        !query ||
+        tx.sku.toLowerCase().includes(query) ||
+        tx.item_name.toLowerCase().includes(query);
+      const matchType =
+        filterType === 'ALL' || tx.type === filterType;
+      return matchQuery && matchType;
+    });
+  }, [transactions, searchQuery, filterType]);
+
+  const filteredStocks = useMemo(() => {
+    if (!stockList) return [];
+    const query = searchQuery.trim().toLowerCase();
+    if (!query) return stockList;
+    return stockList.filter(
+      (s) =>
+        s.sku.toLowerCase().includes(query) ||
+        s.itemName.toLowerCase().includes(query)
+    );
+  }, [stockList, searchQuery]);
 
   const totalToday = transactions?.length ?? 0;
   const totalSku = stockList?.length ?? 0;
@@ -80,13 +110,48 @@ export default function HomeScreen() {
         </Pressable>
       </View>
 
+      <View style={styles.filterSection}>
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Cari SKU atau nama barang..."
+          placeholderTextColor={colors.textTertiary}
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+          autoCapitalize="characters"
+        />
+
+        {activeTab === 'MUTASI' && (
+          <View style={styles.filterTypeRow}>
+            {(['ALL', 'INBOUND', 'OUTBOUND'] as const).map((t) => (
+              <Pressable
+                key={t}
+                style={[
+                  styles.filterChip,
+                  filterType === t && styles.filterChipActive,
+                ]}
+                onPress={() => setFilterType(t)}
+              >
+                <Text
+                  style={[
+                    styles.filterChipText,
+                    filterType === t && styles.filterChipTextActive,
+                  ]}
+                >
+                  {t === 'ALL' ? 'SEMUA' : t === 'INBOUND' ? '↓ MASUK' : '↑ KELUAR'}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+        )}
+      </View>
+
       {isLoading ? (
         <View style={styles.loadingContainer}>
           <Text style={styles.loadingText}>Memuat data...</Text>
         </View>
       ) : activeTab === 'MUTASI' ? (
         <FlatList
-          data={transactions}
+          data={filteredTransactions}
           keyExtractor={(item) => item.id}
           renderItem={({ item }) => (
             <TransactionCard
@@ -105,14 +170,18 @@ export default function HomeScreen() {
           ListEmptyComponent={
             <EmptyState
               icon="—"
-              title="Belum Ada Transaksi"
-              subtitle="Semua mutasi barang masuk dan keluar yang dicatat akan muncul di sini."
+              title={searchQuery ? 'Hasil Tidak Ditemukan' : 'Belum Ada Transaksi'}
+              subtitle={
+                searchQuery
+                  ? 'Tidak ada mutasi yang cocok dengan kata kunci pencarian.'
+                  : 'Semua mutasi barang masuk dan keluar yang dicatat akan muncul di sini.'
+              }
             />
           }
         />
       ) : (
         <FlatList
-          data={stockList}
+          data={filteredStocks}
           keyExtractor={(item) => item.sku}
           renderItem={({ item }) => (
             <View style={styles.stockCard}>
@@ -146,8 +215,12 @@ export default function HomeScreen() {
           ListEmptyComponent={
             <EmptyState
               icon="📦"
-              title="Belum Ada Stok Barang"
-              subtitle="Catat transaksi masuk pertama untuk memulai penghitungan stok otomatis."
+              title={searchQuery ? 'SKU Tidak Ditemukan' : 'Belum Ada Stok Barang'}
+              subtitle={
+                searchQuery
+                  ? 'Tidak ada SKU di gudang yang cocok dengan pencarian.'
+                  : 'Catat transaksi masuk pertama untuk memulai penghitungan stok otomatis.'
+              }
             />
           }
         />
@@ -204,7 +277,7 @@ const styles = StyleSheet.create({
   tabRow: {
     flexDirection: 'row',
     paddingHorizontal: spacing.md,
-    marginBottom: spacing.sm,
+    marginBottom: spacing.xs,
     gap: spacing.sm,
   },
   tabButton: {
@@ -225,6 +298,46 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   tabTextActive: {
+    color: colors.textPrimary,
+  },
+  filterSection: {
+    paddingHorizontal: spacing.md,
+    marginBottom: spacing.sm,
+  },
+  searchInput: {
+    backgroundColor: colors.bgSurface,
+    borderWidth: 1,
+    borderColor: colors.borderSubtle,
+    borderRadius: radii.sm,
+    color: colors.textPrimary,
+    fontSize: typography.body2.fontSize,
+    paddingHorizontal: spacing.md,
+    paddingVertical: 8,
+    marginVertical: spacing.xs,
+  },
+  filterTypeRow: {
+    flexDirection: 'row',
+    gap: spacing.xs,
+    marginTop: 2,
+  },
+  filterChip: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: 5,
+    backgroundColor: colors.bgSurface,
+    borderRadius: 2,
+  },
+  filterChipActive: {
+    backgroundColor: colors.bgSubtle,
+    borderWidth: 1,
+    borderColor: colors.borderStrong,
+  },
+  filterChipText: {
+    color: colors.textTertiary,
+    fontSize: 10,
+    fontWeight: '700',
+    letterSpacing: 0.5,
+  },
+  filterChipTextActive: {
     color: colors.textPrimary,
   },
   listContent: {
