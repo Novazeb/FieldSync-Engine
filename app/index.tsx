@@ -2,6 +2,7 @@ import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import {
   View, Text, FlatList, Pressable, StyleSheet, SafeAreaView, RefreshControl, TextInput,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, Stack } from 'expo-router';
 import { colors, spacing, typography, radii } from '../src/shared/theme/tokens';
 import { SyncStatusPill } from '../src/shared/components/SyncStatusPill';
@@ -15,6 +16,7 @@ type FilterType = 'ALL' | 'INBOUND' | 'OUTBOUND';
 
 export default function HomeScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const { data: transactions, isLoading, refetch: refetchTx } = useTransactions();
   const { data: stockList, refetch: refetchStock } = useStockSummary();
   const { data: syncStatus } = useSyncStatus();
@@ -62,6 +64,8 @@ export default function HomeScreen() {
   const totalToday = transactions?.length ?? 0;
   const totalSku = stockList?.length ?? 0;
   const pendingCount = syncStatus?.pending ?? 0;
+
+  const bottomPadding = Math.max(insets.bottom, 16);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -137,7 +141,7 @@ export default function HomeScreen() {
                     filterType === t && styles.filterChipTextActive,
                   ]}
                 >
-                  {t === 'ALL' ? 'SEMUA' : t === 'INBOUND' ? '↓ MASUK' : '↑ KELUAR'}
+                  {t === 'ALL' ? 'SEMUA' : t === 'INBOUND' ? 'MASUK' : 'KELUAR'}
                 </Text>
               </Pressable>
             ))}
@@ -159,7 +163,7 @@ export default function HomeScreen() {
               onConflictPress={() => router.push(`/conflict/${item.id}`)}
             />
           )}
-          contentContainerStyle={styles.listContent}
+          contentContainerStyle={[styles.listContent, { paddingBottom: bottomPadding + 64 }]}
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
@@ -169,7 +173,7 @@ export default function HomeScreen() {
           }
           ListEmptyComponent={
             <EmptyState
-              icon="—"
+              icon="0"
               title={searchQuery ? 'Hasil Tidak Ditemukan' : 'Belum Ada Transaksi'}
               subtitle={
                 searchQuery
@@ -204,7 +208,7 @@ export default function HomeScreen() {
               </View>
             </View>
           )}
-          contentContainerStyle={styles.listContent}
+          contentContainerStyle={[styles.listContent, { paddingBottom: bottomPadding + 64 }]}
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
@@ -214,7 +218,7 @@ export default function HomeScreen() {
           }
           ListEmptyComponent={
             <EmptyState
-              icon="📦"
+              icon="0"
               title={searchQuery ? 'SKU Tidak Ditemukan' : 'Belum Ada Stok Barang'}
               subtitle={
                 searchQuery
@@ -227,7 +231,7 @@ export default function HomeScreen() {
       )}
 
       <Pressable
-        style={styles.fab}
+        style={[styles.fab, { bottom: bottomPadding }]}
         onPress={() => router.push('/new-transaction')}
         accessibilityRole="button"
         accessibilityLabel="Catat transaksi baru"
