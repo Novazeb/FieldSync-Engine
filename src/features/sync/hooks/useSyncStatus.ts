@@ -38,15 +38,15 @@ export const useSyncStatus = () => {
 
       let label: string;
       if (stats.conflict > 0) {
-        label = `▲ Butuh Tindakan`;
+        label = `KONFLIK (${stats.conflict})`;
       } else if (!network.isConnected && total > 0) {
-        label = `Offline • ${total} Antrean`;
+        label = `OFFLINE (${total})`;
       } else if (!network.isConnected) {
-        label = 'Offline • Standby';
+        label = 'OFFLINE';
       } else if (total > 0) {
-        label = `Syncing (${total})`;
+        label = `SYNCING (${total})`;
       } else {
-        label = 'Online • Synced';
+        label = 'SYNCED';
       }
 
       return { isOnline: network.isConnected, ...stats, label };
