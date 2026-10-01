@@ -1,7 +1,8 @@
-import { useQuery } from '@tanstack/react-query';
+import { useEffect } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useDatabase } from '../../../core/database/provider';
-import { getSyncQueueStats } from '../../../core/sync/syncProcessor';
-import { getNetworkStatus } from '../../../core/network/networkMonitor';
+import { getSyncQueueStats, processSyncQueue } from '../../../core/sync/syncProcessor';
+import { getNetworkStatus, onReconnect } from '../../../core/network/networkMonitor';
 
 export interface SyncStatusInfo {
   isOnline: boolean;
@@ -13,12 +14,26 @@ export interface SyncStatusInfo {
 
 export const useSyncStatus = () => {
   const db = useDatabase();
+  const queryClient = useQueryClient();
+
+  useEffect(() => {
+    const unsub = onReconnect(async () => {
+      await processSyncQueue(db);
+      queryClient.invalidateQueries({ queryKey: ['inventory', 'transactions'] });
+      queryClient.invalidateQueries({ queryKey: ['sync', 'status'] });
+      queryClient.invalidateQueries({ queryKey: ['sync', 'queue'] });
+    });
+    return unsub;
+  }, [db, queryClient]);
 
   return useQuery({
     queryKey: ['sync', 'status'],
     queryFn: async (): Promise<SyncStatusInfo> => {
-      const stats = await getSyncQueueStats(db);
       const network = getNetworkStatus();
+      if (network.isConnected) {
+        await processSyncQueue(db);
+      }
+      const stats = await getSyncQueueStats(db);
       const total = stats.pending + stats.failed;
 
       let label: string;
