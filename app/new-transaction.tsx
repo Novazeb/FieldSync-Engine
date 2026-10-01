@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import {
   View, Text, TextInput, Pressable, StyleSheet, SafeAreaView, Alert, KeyboardAvoidingView, Platform, ScrollView, Modal,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, Stack } from 'expo-router';
 import { CameraView, useCameraPermissions, type BarcodeScanningResult } from 'expo-camera';
 import * as Haptics from 'expo-haptics';
@@ -11,6 +12,7 @@ import { type TransactionType } from '../src/core/sync/types';
 
 export default function NewTransactionScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const createTx = useCreateTransaction();
   const { data: stockList } = useStockSummary();
   const [permission, requestPermission] = useCameraPermissions();
@@ -90,7 +92,7 @@ export default function NewTransactionScreen() {
     <SafeAreaView style={styles.container}>
       <Stack.Screen options={{ title: 'Catat Transaksi Baru' }} />
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
-        <ScrollView contentContainerStyle={styles.form}>
+        <ScrollView contentContainerStyle={[styles.form, { paddingBottom: Math.max(insets.bottom, 16) + 32 }]}>
           <View style={styles.labelRow}>
             <Text style={styles.label}>KODE SKU / BARCODE</Text>
             <Pressable
@@ -99,7 +101,7 @@ export default function NewTransactionScreen() {
               accessibilityRole="button"
               accessibilityLabel="Pindai barcode dengan kamera"
             >
-              <Text style={styles.scanBtnText}>📷 SCAN BARCODE</Text>
+              <Text style={styles.scanBtnText}>SCAN BARCODE</Text>
             </Pressable>
           </View>
 
@@ -145,7 +147,7 @@ export default function NewTransactionScreen() {
               accessibilityRole="button"
             >
               <Text style={[styles.typeText, type === 'INBOUND' && styles.typeTextActive]}>
-                ↓ BARANG MASUK
+                BARANG MASUK
               </Text>
             </Pressable>
             <Pressable
@@ -154,7 +156,7 @@ export default function NewTransactionScreen() {
               accessibilityRole="button"
             >
               <Text style={[styles.typeText, type === 'OUTBOUND' && styles.typeTextActiveOut]}>
-                ↑ BARANG KELUAR
+                BARANG KELUAR
               </Text>
             </Pressable>
           </View>
@@ -205,7 +207,7 @@ export default function NewTransactionScreen() {
               style={styles.modalCloseBtn}
               onPress={() => setIsScanning(false)}
             >
-              <Text style={styles.modalCloseText}>✕ TUTUP</Text>
+              <Text style={styles.modalCloseText}>BATAL</Text>
             </Pressable>
           </View>
 
