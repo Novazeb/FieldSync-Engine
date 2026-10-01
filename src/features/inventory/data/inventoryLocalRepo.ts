@@ -63,6 +63,19 @@ export const getTransactionById = async (
   return row ?? null;
 };
 
+export const getTransactionsByDateRange = async (
+  db: SQLiteDatabase,
+  startTimestamp: number,
+  endTimestamp: number
+): Promise<InventoryTransaction[]> => {
+  return db.getAllAsync<InventoryTransaction>(
+    `SELECT * FROM inventory_transactions 
+     WHERE created_at >= ? AND created_at <= ? 
+     ORDER BY created_at ASC;`,
+    [startTimestamp, endTimestamp]
+  );
+};
+
 export const resolveConflictKeepLocal = async (
   db: SQLiteDatabase,
   txId: string
