@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, FlatList, Pressable, StyleSheet, SafeAreaView } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Stack } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 import { colors, spacing, typography, radii } from '../src/shared/theme/tokens';
@@ -11,6 +12,7 @@ import { type SyncTask } from '../src/core/sync/types';
 import * as Haptics from 'expo-haptics';
 
 export default function SyncQueueScreen() {
+  const insets = useSafeAreaInsets();
   const db = useDatabase();
   const isReady = useDatabaseReady();
   const network = getNetworkStatus();
@@ -30,6 +32,8 @@ export default function SyncQueueScreen() {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
   };
 
+  const bottomPadding = Math.max(insets.bottom, 16);
+
   return (
     <SafeAreaView style={styles.container}>
       <Stack.Screen options={{ title: 'Sync Health & Queue' }} />
@@ -46,7 +50,7 @@ export default function SyncQueueScreen() {
       <FlatList
         data={tasks}
         keyExtractor={(item) => item.task_id}
-        contentContainerStyle={styles.listContent}
+        contentContainerStyle={[styles.listContent, { paddingBottom: bottomPadding + 64 }]}
         renderItem={({ item, index }) => (
           <View style={styles.taskCard}>
             <Text style={styles.taskIndex}>{index + 1}.</Text>
@@ -71,21 +75,21 @@ export default function SyncQueueScreen() {
         )}
         ListEmptyComponent={
           <EmptyState
-            icon="✓"
+            icon="0"
             title="Antrean Sinkronisasi Bersih"
             subtitle="Tidak ada transaksi tertunda. Seluruh data lokal selaras dengan server pusat."
           />
         }
       />
 
-      <View style={styles.footer}>
+      <View style={[styles.footer, { bottom: bottomPadding }]}>
         <Pressable
           style={styles.syncButton}
           onPress={handleForceSync}
           accessibilityRole="button"
           accessibilityLabel="Paksa sinkronisasi sekarang"
         >
-          <Text style={styles.syncButtonText}>⟳ PAKSA SINKRONISASI SEKARANG</Text>
+          <Text style={styles.syncButtonText}>SINKRONISASI SEKARANG</Text>
         </Pressable>
       </View>
     </SafeAreaView>
