@@ -4,12 +4,13 @@ import {
 } from 'react-native';
 import { useRouter, Stack } from 'expo-router';
 import { colors, spacing, typography, radii } from '../src/shared/theme/tokens';
-import { useCreateTransaction } from '../src/features/inventory/hooks/useInventory';
+import { useCreateTransaction, useStockSummary } from '../src/features/inventory/hooks/useInventory';
 import { type TransactionType } from '../src/core/sync/types';
 
 export default function NewTransactionScreen() {
   const router = useRouter();
   const createTx = useCreateTransaction();
+  const { data: stockList } = useStockSummary();
 
   const [sku, setSku] = useState('');
   const [itemName, setItemName] = useState('');
@@ -18,12 +19,31 @@ export default function NewTransactionScreen() {
   const [notes, setNotes] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
 
+  const matchedStock = stockList?.find(
+    (item) => item.sku.toUpperCase() === sku.trim().toUpperCase()
+  );
+  const currentStock = matchedStock?.currentStock ?? 0;
+
+  const handleSkuChange = (val: string) => {
+    setSku(val);
+    const existing = stockList?.find(
+      (item) => item.sku.toUpperCase() === val.trim().toUpperCase()
+    );
+    if (existing && !itemName) {
+      setItemName(existing.itemName);
+    }
+  };
+
   const validate = (): boolean => {
     const newErrors: Record<string, string> = {};
-    if (!sku.trim()) newErrors.sku = 'SKU belum dipilih atau tidak terdaftar di katalog lokal.';
+    if (!sku.trim()) newErrors.sku = 'SKU belum diisi.';
     if (!itemName.trim()) newErrors.itemName = 'Nama barang wajib diisi.';
     const qty = parseInt(quantity, 10);
-    if (!quantity || isNaN(qty) || qty <= 0) newErrors.quantity = 'Kuantitas harus lebih dari 0 unit.';
+    if (!quantity || isNaN(qty) || qty <= 0) {
+      newErrors.quantity = 'Kuantitas harus lebih dari 0 unit.';
+    } else if (type === 'OUTBOUND' && matchedStock && qty > currentStock) {
+      newErrors.quantity = `Kuantitas melebihi stok tersedia (${currentStock} unit).`;
+    }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -55,10 +75,24 @@ export default function NewTransactionScreen() {
             placeholder="Contoh: SKU-88401"
             placeholderTextColor={colors.textTertiary}
             value={sku}
-            onChangeText={setSku}
+            onChangeText={handleSkuChange}
             autoCapitalize="characters"
           />
           {errors.sku && <Text style={styles.errorText}>{errors.sku}</Text>}
+
+          {sku.trim().length > 0 && (
+            <View style={styles.stockNoticeBox}>
+              <Text style={styles.stockNoticeLabel}>STOK TERSEDIA SAAT INI:</Text>
+              <Text
+                style={[
+                  styles.stockNoticeValue,
+                  { color: currentStock > 0 ? colors.syncOnline : colors.syncPending },
+                ]}
+              >
+                {currentStock} Unit {matchedStock ? `(${matchedStock.itemName})` : '(SKU Baru)'}
+              </Text>
+            </View>
+          )}
 
           <Text style={styles.label}>NAMA BARANG</Text>
           <TextInput
@@ -152,6 +186,26 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
   inputError: { borderColor: colors.syncConflict },
+  stockNoticeBox: {
+    backgroundColor: colors.bgSubtle,
+    borderRadius: radii.sm,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    marginTop: spacing.xs,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  stockNoticeLabel: {
+    color: colors.textTertiary,
+    fontSize: typography.caption.fontSize,
+    fontWeight: typography.caption.fontWeight,
+    letterSpacing: 0.5,
+  },
+  stockNoticeValue: {
+    fontSize: typography.body2.fontSize,
+    fontWeight: '700',
+  },
   textArea: { minHeight: 80, textAlignVertical: 'top' },
   errorText: { color: colors.syncConflict, fontSize: typography.caption.fontSize, marginTop: spacing.xs },
   typeRow: { flexDirection: 'row' },
